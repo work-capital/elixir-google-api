@@ -183,7 +183,15 @@ defmodule GoogleApi.Storage.V1.RequestBuilder do
     {:ok, nil}
   end
 
-  def decode(%Tesla.Env{body: body}, struct, dataWrapped: true) do
+  def decode(%Tesla.Env{} = env, struct, opts) do
+    decode(response_format(env), env, struct, opts)
+  end
+
+  def decode("media", %Tesla.Env{body: body}, _struct, _opts) do
+    {:ok, body}
+  end
+
+  def decode(_alt, %Tesla.Env{body: body}, struct, dataWrapped: true) do
     Poison.decode(body, as: %GoogleApi.Storage.V1.RequestBuilder.DataWrapper{}, struct: struct)
     |> case do
       {:ok, %{data: data}} -> {:ok, data}
@@ -191,9 +199,16 @@ defmodule GoogleApi.Storage.V1.RequestBuilder do
     end
   end
 
-  def decode(%Tesla.Env{body: body}, struct, _opts) do
+  def decode(_alt, %Tesla.Env{body: body}, struct, _opts) do
     Poison.decode(body, as: struct)
   end
+
+  defp response_format(%Tesla.Env{query: query}) do
+    query
+    |> Enum.into(%{})
+    |> Map.get(:alt)
+  end
+
 end
 
 defimpl Poison.Decoder, for: GoogleApi.Storage.V1.RequestBuilder.DataWrapper do
